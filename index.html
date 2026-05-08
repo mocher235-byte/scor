@@ -60,19 +60,35 @@
 
         const PRESET_CONFIG = {
             '2812': {
-                title: "金名補習班",
+                title: "金名補習班-總管理",
                 branchId: "branch_2812_v2",
                 classes: [
                     { name: "升私中特訓班國語科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "陳宥樺", "田穎莙"] },
                     { name: "升私中特訓班數學科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "徐廷芝", "陳宥樺", "田穎莙", "周軒芃"] },
                     { name: "升私中特訓班英文科", members: ["陳品蓁", "蔡和蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "徐廷芝", "田穎莙"] },
                     { name: "金名 9 數", members: ["鄭喬勻", "邱繹帆"] },
-                    { name: "金名 9 自", members: ["鄭喬丰", "鄭喬勻", "邱繹帆", "高品涵"] },
-                    { name: "金名 8 數", members: ["陳禹彤", "黃湘晴", "張筑媛", "呂柏漢", "陳韋彤", "陳盈築", "劉宗祐", "林荷悅", "彭宣銘", "池書帆"] },
-                    { name: "金名 8 英", members: ["黃湘晴", "陳禹彤", "蘇暘景", "謝佾喬", "林荷悅", "彭宣銘", "劉烊均", "池書帆", "陳盈築"] },
-                    { name: "金名 8 自", members: ["張筑媛", "陳韋彤", "彭宣銘", "林荷悅", "池書帆", "黃湘晴", "劉烊均", "蘇暘景", "謝佾喬", "陳禹彤"] },
-                    { name: "金名 7 數", members: ["何浩銓", "何政軒", "何知穎", "武俊傑", "葉兆謙", "張鈞齊", "彭羿齊"] },
-                    { name: "金名 7 英", members: ["何浩銓", "何政軒", "何知穎", "武俊傑", "葉兆謙"] }
+                    { name: "金名 8 數", members: ["陳禹彤", "黃湘晴", "張筑媛", "呂柏漢", "陳韋彤", "陳盈築", "劉宗祐", "林荷悅", "彭宣銘", "池書帆"] }
+                ]
+            },
+            '60800': {
+                title: "升私中-國語班",
+                branchId: "branch_60800",
+                classes: [
+                    { name: "升私中特訓班國語科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "陳宥樺", "田穎莙"] }
+                ]
+            },
+            '60900': {
+                title: "升私中-數學班",
+                branchId: "branch_60900",
+                classes: [
+                    { name: "升私中特訓班數學科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "徐廷芝", "陳宥樺", "田穎莙", "周軒芃"] }
+                ]
+            },
+            '61240': {
+                title: "升私中-英文班",
+                branchId: "branch_61240",
+                classes: [
+                    { name: "升私中特訓班英文科", members: ["陳品蓁", "蔡和蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "徐廷芝", "田穎莙"] }
                 ]
             }
         };
@@ -123,8 +139,6 @@
             const [activeTab, setActiveTab] = useState('dashboard');
             const [loading, setLoading] = useState(true);
             const [isCapturing, setIsCapturing] = useState(false);
-            
-            // 新增學員相關狀態
             const [showAddModal, setShowAddModal] = useState(false);
             const [newMemberName, setNewMemberName] = useState('');
             
@@ -168,7 +182,7 @@
                             const members = cls.members.map((name, mIdx) => ({
                                 id: `${Date.now()}_${i}_${mIdx}_${Math.random().toString(36).substr(2, 5)}`,
                                 name, points: 0, isAbsent: false,
-                                emoji: ["🦁", "🎨", "🦖", "🦊", "🎮", "🚀", "🐼", "🐨", "🦉", "🐯"][Math.floor(Math.random() * 10)]
+                                emoji: ["🦁", "🎨", "🦖", "🦊", "🎮", "🚀", "🐼", "🐨", "🦉", "🐯", "🐶", "🦁", "🎨", "🚀"][Math.floor(Math.random() * 14)]
                             }));
                             await addDoc(classesRef, { name: cls.name, branchId: branchKey, members, history: [], createdAt: Date.now() + i });
                         }
@@ -207,7 +221,6 @@
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', currentClassId), { members: updatedMembers });
             };
 
-            // 新增學員邏輯
             const handleAddMember = async () => {
                 if (!newMemberName.trim() || !currentClassId || !db) return;
                 const newMember = {
@@ -316,8 +329,6 @@
                                                     )}
                                                 </div>
                                             ))}
-                                            
-                                            {/* 新增學員入口卡片 */}
                                             {!isCapturing && (
                                                 <div onClick={() => setShowAddModal(true)} className="bg-dashed border-4 border-dashed border-slate-200 p-4 rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:border-sky-400 hover:bg-sky-50 transition-all min-h-[220px] group">
                                                     <div className="text-5xl text-slate-300 group-hover:scale-125 transition-transform mb-2">👤+</div>
@@ -358,7 +369,6 @@
                         </div>
                     </main>
 
-                    {/* 新增學員彈窗 */}
                     {showAddModal && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[3000] flex items-center justify-center p-6 animate-in fade-in">
                             <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl border-t-[10px] border-sky-500 relative">
