@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金名雲端即時加分系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        .animate-spin-slow { animation: spin 3s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: white; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999;
+        }
+    </style>
+</head>
+<body class="bg-[#F0F9FF]">
+    <div id="root">
+        <div class="loading-overlay">正在啟動金名系統...</div>
+    </div>
+
+    <script type="text/babel" data-type="module">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- Firebase 模組匯入 ---
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, doc, onSnapshot, updateDoc, addDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        // --- 您的專屬配置 ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDcZH07By0OdVohwgpg_pqzGgvKnDmgE9U",
+            authDomain: "jinming-scor.firebaseapp.com",
+            projectId: "jinming-scor",
+            storageBucket: "jinming-scor.firebasestorage.app",
+            messagingSenderId: "889733738388",
+            appId: "1:889733738388:web:9f60e3da488ec338b9a981",
+            measurementId: "G-YKNJ69QNN1"
+        };
+
+        const appId = "jinming-main-v1"; 
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const LOGO_URL_PRIMARY = "https://blogger.googleusercontent.com/img/a/AVvXsEjRqKCNWrsH37nthSraJgRc4iUslqv0Pw0urBa9ZwTuV3CLiliGNWjV3EddlJwJ7ox07Uol5GQL77Msjqw-_MUrwQIS6E7iHsdc-RaogP2TVjkJmZ1IkGSrX4ZCLfiZmapAPl5PyxovhZwtsxh080ROmCTJWQcbdtBMAAYIlO-BIsofB7tRYNn0ZZTHEgM";
+
+        const PRESET_CONFIG = {
+            '2812': {
+                title: "金名補習班",
+                branchId: "branch_2812",
+                classes: [
+                    { name: "金名 9 數", members: ["鄭喬勻", "邱繹帆"] },
+                    { name: "金名 9 自", members: ["鄭喬丰", "鄭喬勻", "邱繹帆", "高品涵"] },
+                    { name: "金名 8 數", members: ["陳禹彤", "黃湘晴", "張筑媛", "呂柏漢", "陳韋彤", "陳盈築", "劉宗祐", "林荷悅", "彭宣銘", "池書帆"] },
+                    { name: "金名 8 英", members: ["黃湘晴", "陳禹彤", "蘇暘景", "謝佾喬", "林荷悅", "彭宣銘", "劉烊均", "池書帆", "陳盈築"] },
+                    { name: "金名 8 自", members: ["張筑媛", "陳韋彤", "彭宣銘", "林荷悅", "池書帆", "黃湘晴", "劉烊均", "蘇暘景", "謝佾喬", "陳禹彤"] },
+                    { name: "金名 7 數", members: ["何浩銓", "何政軒", "何知穎", "武俊傑", "葉兆謙", "張鈞齊", "彭羿齊"] },
+                    { name: "金名 7 英", members: ["何浩銓", "何政軒", "何知穎", "武俊傑", "葉兆謙"] },
+                    { name: "升私中特訓班國語科", members: ["謝建霆", "黃晨瑋", "李昱泓", "陳宥樺", "田穎莙", "陳品蓁"] },
+                    { name: "升私中特訓班數學科", members: ["謝建霆", "黃晨瑋", "李昱泓", "徐廷芝", "陳宥樺", "田穎莙", "陳品蓁"] },
+                    { name: "升私中特訓班英文&英檢", members: ["謝建霆", "黃晨瑋", "李昱泓", "徐廷芝", "田穎莙", "陳品蓁", "蔡和蓁"] }
+                ]
+            }
+        };
+
+        const Icon = ({ name, size = 24, className = "" }) => {
+            const icons = {
+                users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+                trophy: <><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></>,
+                list: <><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></>,
+                grid: <><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></>,
+                plus: <><path d="M5 12h14"/><path d="M12 5v14"/></>,
+                rotate: <><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></>,
+                camera: <><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></>,
+                logout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></>,
+                chevronRight: <path d="m9 18 6-6-6-6"/>,
+                calendarX: <><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><line x1="10" x2="14" y1="14" y2="18"/><line x1="14" x2="10" y1="14" y2="18"/></>,
+                userCheck: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></>
+            };
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {icons[name]}
+                </svg>
+            );
+        };
+
+        const NavItem = ({ icon, label, active, onClick }) => (
+            <button onClick={onClick} className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-4 flex-1 md:flex-none md:w-full py-2 md:py-4 transition-all rounded-2xl ${active ? 'bg-[#E60012] text-white shadow-lg' : 'text-slate-300 hover:bg-slate-50'}`}>
+                <Icon name={icon} size={24} />
+                <span className="text-[10px] md:text-sm font-black">{label}</span>
+            </button>
+        );
+
+        const maskName = (name) => (!name || name.length < 2) ? name : name.substring(1);
+        const getFormattedDate = () => {
+            const date = new Date();
+            const days = ['日', '一', '二', '三', '四', '五', '六'];
+            return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}(${days[date.getDay()]})`;
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [appMode, setAppMode] = useState(null);
+            const [password, setPassword] = useState('');
+            const [currentConfig, setCurrentConfig] = useState(null);
+            const [classes, setClasses] = useState([]);
+            const [currentClassId, setCurrentClassId] = useState(null);
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [loading, setLoading] = useState(true);
+            const [isCapturing, setIsCapturing] = useState(false);
+            const rootRef = useRef(null);
+            const initializedRef = useRef(null);
+
+            const currentClass = useMemo(() => classes.find(c => c.id === currentClassId), [classes, currentClassId]);
+
+            useEffect(() => {
+                const initAuth = async () => {
+                    try { await signInAnonymously(auth); } catch (e) { console.error("登入失敗", e); }
+                };
+                initAuth();
+                return onAuthStateChanged(auth, (u) => { setUser(u); setLoading(false); });
+            }, []);
+
+            useEffect(() => {
+                if (!appMode || !currentConfig || !user) return;
+                const classesRef = collection(db, 'artifacts', appId, 'public', 'data', 'classes');
+                const branchKey = currentConfig.branchId;
+
+                const unsubscribe = onSnapshot(classesRef, async (snapshot) => {
+                    const allData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const filtered = allData.filter(c => c.branchId === branchKey);
+                    
+                    if (appMode === 'preset' && filtered.length === 0 && initializedRef.current !== branchKey) {
+                        initializedRef.current = branchKey;
+                        setLoading(true);
+                        for (let i = 0; i < currentConfig.classes.length; i++) {
+                            const cls = currentConfig.classes[i];
+                            const members = cls.members.map((name, mIdx) => ({
+                                id: `${Date.now()}_${i}_${mIdx}_${Math.random().toString(36).substr(2, 5)}`,
+                                name, points: 0, isAbsent: false,
+                                emoji: ["🦁", "🎨", "🦖", "🦊", "🎮", "🚀"][Math.floor(Math.random() * 6)]
+                            }));
+                            await addDoc(classesRef, { name: cls.name, branchId: branchKey, members, history: [], createdAt: Date.now() + i });
+                        }
+                        setLoading(false);
+                    }
+                    setClasses(filtered.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)));
+                }, (err) => console.error("Firestore Error:", err));
+                return () => unsubscribe();
+            }, [appMode, currentConfig, user]);
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                const config = PRESET_CONFIG[password] || { title: "臨時系統", branchId: "temp_" + Date.now(), classes: [] };
+                setCurrentConfig(config);
+                setAppMode(PRESET_CONFIG[password] ? 'preset' : 'temporary');
+                setActiveTab('class_manager');
+            };
+
+            const handleAdjustPoints = async (memberId, amount) => {
+                if (!currentClass || !db) return;
+                const member = currentClass.members.find(m => m.id === memberId);
+                if (!member || member.isAbsent) return;
+                const updatedMembers = currentClass.members.map(m => m.id === memberId ? { ...m, points: Math.max(0, (m.points || 0) + amount) } : m);
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', currentClassId), {
+                    members: updatedMembers,
+                    history: [{ id: Date.now(), memberName: member.name, amount, reason: "表現優秀", timestamp: new Date().toLocaleString() }, ...(currentClass.history || [])].slice(0, 20)
+                });
+            };
+
+            const handleToggleAbsent = async (memberId) => {
+                if (!currentClass || !db) return;
+                const updatedMembers = currentClass.members.map(m => m.id === memberId ? { ...m, isAbsent: !m.isAbsent } : m);
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', currentClassId), { members: updatedMembers });
+            };
+
+            const handleCapture = async () => {
+                if (!rootRef.current) return;
+                setIsCapturing(true);
+                setTimeout(async () => {
+                    const canvas = await html2canvas(rootRef.current, { backgroundColor: "#F0F9FF", scale: 2 });
+                    const link = document.createElement('a');
+                    link.download = `金名學習報_${currentClass?.name}.png`;
+                    link.href = canvas.toDataURL("image/png");
+                    link.click();
+                    setIsCapturing(false);
+                }, 500);
+            };
+
+            if (!appMode) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-6 bg-[#F0F9FF]">
+                        <div className="bg-white p-10 rounded-[3rem] shadow-2xl border-t-[12px] border-[#E60012] w-full max-w-md animate-in zoom-in">
+                            <div className="text-center mb-8">
+                                <img src={LOGO_URL_PRIMARY} className="w-24 h-24 mx-auto mb-6 rounded-full border-4 border-yellow-400 shadow-lg" />
+                                <h1 className="text-2xl font-black text-[#0068B7] italic">金名雲端即時加分系統</h1>
+                            </div>
+                            <form onSubmit={handleLogin} className="space-y-6">
+                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="請輸入分校密碼..." className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-4 border-transparent focus:border-yellow-400 outline-none font-bold text-lg" />
+                                <button className="w-full bg-[#E60012] text-white py-4 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all">進入系統</button>
+                            </form>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div ref={rootRef} className={`min-h-screen flex flex-col ${isCapturing ? 'h-auto' : 'h-screen'}`}>
+                    {!isCapturing && (
+                        <nav className="fixed bottom-0 left-0 right-0 h-20 md:top-0 md:left-0 md:w-24 md:h-full bg-white border-t md:border-r-4 border-yellow-400 z-50 flex md:flex-col justify-around items-center p-2 shadow-xl">
+                            <NavItem icon="users" label="學員" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
+                            <NavItem icon="trophy" label="排行" active={activeTab === 'leaderboard'} onClick={() => setActiveTab('leaderboard')} />
+                            <NavItem icon="list" label="紀錄" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
+                            <NavItem icon="grid" label="班級" active={activeTab === 'class_manager'} onClick={() => setActiveTab('class_manager')} />
+                        </nav>
+                    )}
+
+                    <main className={`flex-1 flex flex-col md:ml-24 ${isCapturing ? 'p-10 bg-[#F0F9FF]' : 'overflow-hidden'}`}>
+                        <header className="p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-white/50 backdrop-blur-md">
+                            <div className="flex items-center gap-4">
+                                <img src={LOGO_URL_PRIMARY} className="w-12 h-12 rounded-full border-2 border-yellow-400 shadow-sm" />
+                                <div>
+                                    <h1 className="text-xl font-black text-[#0068B7] tracking-tight">{currentConfig.title}</h1>
+                                    <div className="text-xs text-slate-500 font-bold">{getFormattedDate()} {currentClass ? `| ${currentClass.name}` : ''}</div>
+                                </div>
+                            </div>
+                            {!isCapturing && (
+                                <div className="flex gap-2">
+                                    {activeTab === 'leaderboard' && currentClassId && <button onClick={handleCapture} className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-black flex items-center gap-2 shadow-md"><Icon name="camera" size={16}/> 截圖</button>}
+                                    <button onClick={() => location.reload()} className="p-2 text-slate-400 hover:text-red-500"><Icon name="logout" size={20}/></button>
+                                </div>
+                            )}
+                        </header>
+
+                        <div className={`flex-1 p-4 md:p-8 ${isCapturing ? '' : 'overflow-y-auto no-scrollbar'}`}>
+                            {(!currentClassId || activeTab === 'class_manager') ? (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in">
+                                    {classes.map(c => (
+                                        <div key={c.id} onClick={() => { setCurrentClassId(c.id); setActiveTab('dashboard'); }} className="bg-white p-8 rounded-[2.5rem] border-4 border-white hover:border-yellow-400 shadow-xl cursor-pointer transition-all hover:scale-105 text-center group">
+                                            <div className="text-5xl mb-4 group-hover:rotate-12 transition-transform">🏫</div>
+                                            <h3 className="text-xl font-black text-[#0068B7] leading-tight">{c.name}</h3>
+                                            <div className="mt-4 pt-4 border-t text-sm font-bold text-sky-600 flex justify-between">進入管理 <Icon name="chevronRight" size={16}/></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="animate-in fade-in">
+                                    {activeTab === 'dashboard' && (
+                                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                            {currentClass.members.map(m => (
+                                                <div key={m.id} className={`bg-white p-4 rounded-[2rem] shadow-lg border-4 transition-all flex flex-col items-center relative ${m.isAbsent ? 'opacity-40 grayscale border-slate-200' : 'border-yellow-400 hover:border-[#0068B7]'}`}>
+                                                    {!isCapturing && (
+                                                        <button onClick={() => handleToggleAbsent(m.id)} className={`absolute top-2 right-2 p-1.5 rounded-full ${m.isAbsent ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                                            <Icon name={m.isAbsent ? "calendarX" : "userCheck"} size={16} />
+                                                        </button>
+                                                    )}
+                                                    <div className="text-4xl mb-2 bg-slate-50 w-20 h-20 rounded-2xl flex items-center justify-center border-2 border-white shadow-inner">{m.isAbsent ? "💤" : m.emoji}</div>
+                                                    <div className="font-black text-lg mb-1 truncate w-full text-center leading-[1.6]">{isCapturing ? maskName(m.name) : m.name}</div>
+                                                    <div className={`${m.isAbsent ? 'bg-slate-300' : 'bg-[#E60012]'} text-white px-3 py-1 rounded-full text-xs font-black mb-4`}>⭐ {m.points}</div>
+                                                    {!isCapturing && (
+                                                        <div className="grid grid-cols-2 gap-2 w-full">
+                                                            {[1, 5, 10, 20].map(v => (
+                                                                <button key={v} disabled={m.isAbsent} onClick={() => handleAdjustPoints(m.id, v)} className={`text-white text-xs font-black py-2 rounded-lg ${m.isAbsent ? 'bg-slate-200' : 'bg-sky-600'}`}>+{v}</button>
+                                                            ))}
+                                                            <button disabled={m.isAbsent} onClick={() => handleAdjustPoints(m.id, -1)} className={`text-xs font-black py-2 rounded-lg border-2 ${m.isAbsent ? 'border-slate-200 text-slate-200' : 'border-red-500 text-red-500'}`}>-1</button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {activeTab === 'leaderboard' && (
+                                        <div className="bg-white rounded-[3rem] p-8 shadow-2xl max-w-3xl mx-auto border-b-[12px] border-yellow-400">
+                                            <div className="space-y-4">
+                                                {[...currentClass.members].sort((a,b) => b.points - a.points).map((m, i) => (
+                                                    <div key={m.id} className={`flex items-center gap-6 p-6 rounded-[2rem] ${i === 0 ? 'bg-yellow-50 border-4 border-yellow-400 scale-105' : 'bg-slate-50'}`}>
+                                                        <div className={`w-12 h-12 flex items-center justify-center font-black rounded-xl text-2xl ${i === 0 ? 'bg-yellow-400 text-red-600' : 'bg-white text-slate-300'}`}>{i+1}</div>
+                                                        <div className="text-4xl">{m.isAbsent ? "💤" : m.emoji}</div>
+                                                        <div className="flex-1 font-black text-2xl">{isCapturing ? maskName(m.name) : m.name}</div>
+                                                        <div className="text-4xl font-black text-[#0068B7] italic">{m.points} <span className="text-sm not-italic text-sky-300">PTS</span></div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {activeTab === 'history' && (
+                                        <div className="max-w-2xl mx-auto space-y-4">
+                                            {(currentClass.history || []).map(log => (
+                                                <div key={log.id} className="bg-white p-6 rounded-2xl shadow-md border-l-[10px] border-[#0068B7] flex justify-between items-center transition-transform hover:translate-x-2">
+                                                    <div>
+                                                        <div className="font-black text-lg">{isCapturing ? maskName(log.memberName) : log.memberName} <span className={log.amount >= 0 ? "text-green-500" : "text-red-500"}>{log.amount >= 0 ? `+${log.amount}` : log.amount}</span></div>
+                                                        <div className="text-slate-400 font-bold text-sm tracking-wide">{log.reason}</div>
+                                                    </div>
+                                                    <div className="text-right text-xs font-black text-slate-300">{log.timestamp}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </main>
+
+                    {loading && (
+                        <div className="loading-overlay z-[2000] bg-white/80 backdrop-blur-sm">
+                            <div className="animate-spin text-[#0068B7]"><Icon name="rotate" size={48} /></div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
