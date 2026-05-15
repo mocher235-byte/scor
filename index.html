@@ -37,7 +37,7 @@
         // --- Firebase 模組匯入 ---
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, collection, doc, onSnapshot, updateDoc, addDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getFirestore, collection, doc, onSnapshot, updateDoc, addDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDcZH07By0OdVohwgpg_pqzGgvKnDmgE9U",
@@ -56,10 +56,9 @@
 
         const LOGO_URL_PRIMARY = "https://blogger.googleusercontent.com/img/a/AVvXsEjRqKCNWrsH37nthSraJgRc4iUslqv0Pw0urBa9ZwTuV3CLiliGNWjV3EddlJwJ7ox07Uol5GQL77Msjqw-_MUrwQIS6E7iHsdc-RaogP2TVjkJmZ1IkGSrX4ZCLfiZmapAPl5PyxovhZwtsxh080ROmCTJWQcbdtBMAAYIlO-BIsofB7tRYNn0ZZTHEgM";
 
-        // 短促俐落的音效
         const SOUNDS = {
-            plus: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3", 
-            minus: "https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3" 
+            plus: "https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3", 
+            minus: "https://assets.mixkit.co/active_storage/sfx/2020/2020-preview.mp3" 
         };
 
         const PRESET_CONFIG = {
@@ -68,8 +67,8 @@
                 branchId: "branch_2812_v2",
                 classes: [
                     { name: "奧林匹克資優數學", members: ["宗佑", "詠甯", "仲愷", "宸皜", "Peggy", "Rey"] },
-                    { name: "升私中特訓班國語科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "陳宥樺", "田穎莙"] },
-                    { name: "升私中特訓班數學科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "徐廷芝", "陳宥樺", "田穎莙", "周軒芃"] },
+                    { name: "升私中特訓班國語科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "陳宥樺", "田穎莙", "徐承佑"] },
+                    { name: "升私中特訓班數學科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "徐廷芝", "陳宥樺", "田穎莙", "周軒芃", "徐承佑"] },
                     { name: "升私中特訓班英文科", members: ["陳品蓁", "蔡和蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "徐廷芝", "田穎莙"] },
                     { name: "金名 9 數", members: ["鄭喬勻", "邱繹帆"] },
                     { name: "金名 8 數", members: ["陳禹彤", "黃湘晴", "張筑媛", "呂柏漢", "陳韋彤", "陳盈築", "劉宗祐", "林荷悅", "彭宣銘", "池書帆"] }
@@ -79,14 +78,14 @@
                 title: "升私中-國語班",
                 branchId: "branch_60800",
                 classes: [
-                    { name: "升私中特訓班國語科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "陳宥樺", "田穎莙"] }
+                    { name: "升私中特訓班國語科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "陳宥樺", "田穎莙", "徐承佑"] }
                 ]
             },
             '60900': {
                 title: "升私中-數學班",
                 branchId: "branch_60900",
                 classes: [
-                    { name: "升私中特訓班數學科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "徐廷芝", "陳宥樺", "田穎莙", "周軒芃"] }
+                    { name: "升私中特訓班數學科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "徐廷芝", "陳宥樺", "田穎莙", "周軒芃", "徐承佑"] }
                 ]
             },
             '61240': {
@@ -111,7 +110,7 @@
                 chevronRight: <path d="m9 18 6-6-6-6"/>,
                 calendarX: <><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><line x1="10" x2="14" y1="14" y2="18"/><line x1="14" x2="10" y1="14" y2="18"/></>,
                 userCheck: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></>,
-                x: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+                x: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" x2="6" y1="6" x2="18" y2="18"/></>,
                 trash: <><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>
             };
             return (
@@ -146,8 +145,12 @@
             const [loading, setLoading] = useState(true);
             const [isCapturing, setIsCapturing] = useState(false);
             const [showAddModal, setShowAddModal] = useState(false);
+            const [showAddClassModal, setShowAddClassModal] = useState(false);
             const [showResetConfirm, setShowResetConfirm] = useState(false);
+            const [memberToDelete, setMemberToDelete] = useState(null);
+            const [classToDelete, setClassToDelete] = useState(null);
             const [newMemberName, setNewMemberName] = useState('');
+            const [newClassName, setNewClassName] = useState('');
             
             const rootRef = useRef(null);
             const initializedRef = useRef(null);
@@ -248,9 +251,43 @@
                     emoji: ["🦁", "🎨", "🦖", "🦊", "🎮", "🚀", "🐼", "🐨", "🦉", "🐯", "🐶", "🐱", "🐰", "🦁"][Math.floor(Math.random() * 14)]
                 };
                 const updatedMembers = [...currentClass.members, newMember];
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', currentClassId), { members: updatedMembers });
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', currentClassId), { 
+                    members: updatedMembers,
+                    history: [{ id: Date.now(), memberName: newMemberName.trim(), amount: 0, reason: "新學員加入", timestamp: new Date().toLocaleString() }, ...(currentClass.history || [])].slice(0, 20)
+                });
                 setNewMemberName('');
                 setShowAddModal(false);
+            };
+
+            const handleDeleteMember = async () => {
+                if (!memberToDelete || !currentClassId || !db) return;
+                const updatedMembers = currentClass.members.filter(m => m.id !== memberToDelete.id);
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', currentClassId), { 
+                    members: updatedMembers,
+                    history: [{ id: Date.now(), memberName: memberToDelete.name, amount: 0, reason: "移除學員", timestamp: new Date().toLocaleString() }, ...(currentClass.history || [])].slice(0, 20)
+                });
+                setMemberToDelete(null);
+            };
+
+            const handleAddClass = async () => {
+                if (!newClassName.trim() || !currentConfig || !db) return;
+                const classesRef = collection(db, 'artifacts', appId, 'public', 'data', 'classes');
+                await addDoc(classesRef, {
+                    name: newClassName.trim(),
+                    branchId: currentConfig.branchId,
+                    members: [],
+                    history: [],
+                    createdAt: Date.now()
+                });
+                setNewClassName('');
+                setShowAddClassModal(false);
+            };
+
+            const handleDeleteClass = async () => {
+                if (!classToDelete || !db) return;
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', classToDelete.id));
+                if (currentClassId === classToDelete.id) setCurrentClassId(null);
+                setClassToDelete(null);
             };
 
             const handleCapture = async () => {
@@ -320,12 +357,21 @@
                             {(!currentClassId || activeTab === 'class_manager') ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in">
                                     {classes.map(c => (
-                                        <div key={c.id} onClick={() => { setCurrentClassId(c.id); setActiveTab('dashboard'); }} className="bg-white p-8 rounded-[2.5rem] border-4 border-white hover:border-yellow-400 shadow-xl cursor-pointer transition-all hover:scale-105 text-center group">
-                                            <div className="text-5xl mb-4 group-hover:rotate-12 transition-transform">🏫</div>
-                                            <h3 className="text-xl font-black text-[#0068B7] leading-tight">{c.name}</h3>
-                                            <div className="mt-4 pt-4 border-t text-sm font-bold text-sky-600 flex justify-between">進入管理 <Icon name="chevronRight" size={16}/></div>
+                                        <div key={c.id} className="relative group">
+                                            <div onClick={() => { setCurrentClassId(c.id); setActiveTab('dashboard'); }} className="bg-white p-8 rounded-[2.5rem] border-4 border-white hover:border-yellow-400 shadow-xl cursor-pointer transition-all hover:scale-105 text-center flex flex-col items-center">
+                                                <div className="text-5xl mb-4 group-hover:rotate-12 transition-transform">🏫</div>
+                                                <h3 className="text-xl font-black text-[#0068B7] leading-tight">{c.name}</h3>
+                                                <div className="mt-4 pt-4 border-t w-full text-sm font-bold text-sky-600 flex justify-between">進入管理 <Icon name="chevronRight" size={16}/></div>
+                                            </div>
+                                            <button onClick={() => setClassToDelete(c)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-300 rounded-full hover:bg-red-500 hover:text-white opacity-0 group-hover:opacity-100 transition-all">
+                                                <Icon name="trash" size={16} />
+                                            </button>
                                         </div>
                                     ))}
+                                    <div onClick={() => setShowAddClassModal(true)} className="bg-dashed p-8 rounded-[2.5rem] flex flex-col items-center justify-center cursor-pointer hover:bg-sky-50 transition-all min-h-[200px] group">
+                                        <div className="text-5xl text-slate-300 group-hover:scale-125 transition-transform mb-2">🏫+</div>
+                                        <div className="font-black text-slate-400 text-lg">新增班級</div>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="animate-in fade-in">
@@ -334,11 +380,16 @@
                                             {currentClass.members.map(m => (
                                                 <div key={m.id} className={`bg-white p-4 rounded-[2rem] shadow-lg border-4 transition-all flex flex-col items-center relative ${m.isAbsent ? 'opacity-40 grayscale border-slate-200' : 'border-yellow-400 hover:border-[#0068B7]'}`}>
                                                     {!isCapturing && (
-                                                        <button onClick={() => handleToggleAbsent(m.id)} className={`absolute top-2 right-2 p-1.5 rounded-full ${m.isAbsent ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                                                            <Icon name={m.isAbsent ? "calendarX" : "userCheck"} size={16} />
-                                                        </button>
+                                                        <div className="absolute top-2 left-2 right-2 flex justify-between items-center w-[calc(100%-1rem)]">
+                                                            <button onClick={() => setMemberToDelete(m)} className="p-1.5 rounded-full bg-slate-100 text-slate-400 hover:bg-red-500 hover:text-white transition-colors">
+                                                                <Icon name="trash" size={14} />
+                                                            </button>
+                                                            <button onClick={() => handleToggleAbsent(m.id)} className={`p-1.5 rounded-full ${m.isAbsent ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                                                <Icon name={m.isAbsent ? "calendarX" : "userCheck"} size={16} />
+                                                            </button>
+                                                        </div>
                                                     )}
-                                                    <div className="text-4xl mb-2 bg-slate-50 w-20 h-20 rounded-2xl flex items-center justify-center border-2 border-white shadow-inner">{m.isAbsent ? "💤" : m.emoji}</div>
+                                                    <div className="text-4xl mt-4 mb-2 bg-slate-50 w-20 h-20 rounded-2xl flex items-center justify-center border-2 border-white shadow-inner">{m.isAbsent ? "💤" : m.emoji}</div>
                                                     <div className="font-black text-lg mb-1 truncate w-full text-center leading-[1.6]">{isCapturing ? maskName(m.name) : m.name}</div>
                                                     <div className={`${m.isAbsent ? 'bg-slate-300' : 'bg-[#E60012]'} text-white px-3 py-1 rounded-full text-xs font-black mb-4`}>⭐ {m.points}</div>
                                                     {!isCapturing && (
@@ -391,7 +442,37 @@
                         </div>
                     </main>
 
-                    {/* 確認重置視窗 */}
+                    {/* 刪除班級確認 */}
+                    {classToDelete && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[5000] flex items-center justify-center p-6 animate-in fade-in">
+                            <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl border-t-[10px] border-red-500 text-center">
+                                <div className="text-6xl mb-4">🏫❌</div>
+                                <h2 className="text-2xl font-black text-slate-800 mb-2">確定刪除班級？</h2>
+                                <p className="text-slate-500 font-bold mb-8">將永久刪除「{classToDelete.name}」及其點數紀錄。</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button onClick={() => setClassToDelete(null)} className="py-4 rounded-2xl bg-slate-100 text-slate-500 font-black">取消</button>
+                                    <button onClick={handleDeleteClass} className="py-4 rounded-2xl bg-red-600 text-white font-black shadow-lg">確認刪除</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 刪除學員確認 */}
+                    {memberToDelete && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[5000] flex items-center justify-center p-6 animate-in fade-in">
+                            <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl border-t-[10px] border-red-500 text-center">
+                                <div className="text-6xl mb-4">👤❌</div>
+                                <h2 className="text-2xl font-black text-slate-800 mb-2">確定刪除「{memberToDelete.name}」？</h2>
+                                <p className="text-slate-500 font-bold mb-8">此操作將永久移除該名學員及其所有點數紀錄。</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button onClick={() => setMemberToDelete(null)} className="py-4 rounded-2xl bg-slate-100 text-slate-500 font-black">取消</button>
+                                    <button onClick={handleDeleteMember} className="py-4 rounded-2xl bg-red-600 text-white font-black shadow-lg">確認刪除</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 確認重置點數 */}
                     {showResetConfirm && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[4000] flex items-center justify-center p-6 animate-in fade-in">
                             <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl border-t-[10px] border-red-500 text-center">
@@ -406,6 +487,29 @@
                         </div>
                     )}
 
+                    {/* 新增班級彈窗 */}
+                    {showAddClassModal && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[3000] flex items-center justify-center p-6 animate-in fade-in">
+                            <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl border-t-[10px] border-yellow-400 relative">
+                                <button onClick={() => setShowAddClassModal(false)} className="absolute top-4 right-4 p-2 text-slate-300 hover:text-red-500">
+                                    <Icon name="x" size={24} />
+                                </button>
+                                <h2 className="text-2xl font-black text-[#0068B7] mb-6 text-center">建立新班級</h2>
+                                <input 
+                                    autoFocus
+                                    type="text" 
+                                    value={newClassName} 
+                                    onChange={e => setNewClassName(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleAddClass()}
+                                    placeholder="請輸入班級名稱..." 
+                                    className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-4 border-transparent focus:border-yellow-400 outline-none font-bold text-lg mb-6"
+                                />
+                                <button onClick={handleAddClass} className="w-full bg-[#E60012] text-white py-4 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all">確認建立</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 新增學員彈窗 */}
                     {showAddModal && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[3000] flex items-center justify-center p-6 animate-in fade-in">
                             <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl border-t-[10px] border-sky-500 relative">
@@ -422,12 +526,7 @@
                                     placeholder="請輸入姓名..." 
                                     className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-4 border-transparent focus:border-sky-400 outline-none font-bold text-lg mb-6"
                                 />
-                                <button 
-                                    onClick={handleAddMember}
-                                    className="w-full bg-sky-600 text-white py-4 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all"
-                                >
-                                    確認加入
-                                </button>
+                                <button onClick={handleAddMember} className="w-full bg-sky-600 text-white py-4 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all">確認加入</button>
                             </div>
                         </div>
                     )}
@@ -435,7 +534,7 @@
                     {loading && (
                         <div className="loading-overlay z-[2000] bg-white/80 backdrop-blur-sm">
                             <div className="animate-spin text-[#0068B7]"><Icon name="rotate" size={48} /></div>
-                            <div className="mt-4 font-black text-slate-500">更新班級配置中...</div>
+                            <div className="mt-4 font-black text-slate-500">更新雲端資料中...</div>
                         </div>
                     )}
                 </div>
