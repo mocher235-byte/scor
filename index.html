@@ -21,6 +21,9 @@
             background: white; display: flex; flex-direction: column;
             justify-content: center; align-items: center; z-index: 9999;
         }
+        .bg-dashed {
+            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='32' ry='32' stroke='%23CBD5E1' stroke-width='4' stroke-dasharray='12%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+        }
     </style>
 </head>
 <body class="bg-[#F0F9FF]">
@@ -53,9 +56,10 @@
 
         const LOGO_URL_PRIMARY = "https://blogger.googleusercontent.com/img/a/AVvXsEjRqKCNWrsH37nthSraJgRc4iUslqv0Pw0urBa9ZwTuV3CLiliGNWjV3EddlJwJ7ox07Uol5GQL77Msjqw-_MUrwQIS6E7iHsdc-RaogP2TVjkJmZ1IkGSrX4ZCLfiZmapAPl5PyxovhZwtsxh080ROmCTJWQcbdtBMAAYIlO-BIsofB7tRYNn0ZZTHEgM";
 
+        // 短促俐落的音效
         const SOUNDS = {
-            plus: "https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3", 
-            minus: "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" 
+            plus: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3", 
+            minus: "https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3" 
         };
 
         const PRESET_CONFIG = {
@@ -63,6 +67,7 @@
                 title: "金名補習班-總管理",
                 branchId: "branch_2812_v2",
                 classes: [
+                    { name: "奧林匹克資優數學", members: ["宗佑", "詠甯", "仲愷", "宸皜", "Peggy", "Rey"] },
                     { name: "升私中特訓班國語科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "陳宥樺", "田穎莙"] },
                     { name: "升私中特訓班數學科", members: ["陳品蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "徐廷芝", "陳宥樺", "田穎莙", "周軒芃"] },
                     { name: "升私中特訓班英文科", members: ["陳品蓁", "蔡和蓁", "楊恩煦", "謝建霆", "黃晨瑋", "李昱泓", "徐廷芝", "田穎莙"] },
@@ -106,7 +111,8 @@
                 chevronRight: <path d="m9 18 6-6-6-6"/>,
                 calendarX: <><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><line x1="10" x2="14" y1="14" y2="18"/><line x1="14" x2="10" y1="14" y2="18"/></>,
                 userCheck: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></>,
-                x: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
+                x: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+                trash: <><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>
             };
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -140,6 +146,7 @@
             const [loading, setLoading] = useState(true);
             const [isCapturing, setIsCapturing] = useState(false);
             const [showAddModal, setShowAddModal] = useState(false);
+            const [showResetConfirm, setShowResetConfirm] = useState(false);
             const [newMemberName, setNewMemberName] = useState('');
             
             const rootRef = useRef(null);
@@ -215,6 +222,16 @@
                 });
             };
 
+            const handleResetPoints = async () => {
+                if (!currentClass || !db) return;
+                const updatedMembers = currentClass.members.map(m => ({ ...m, points: 0 }));
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'classes', currentClassId), {
+                    members: updatedMembers,
+                    history: [{ id: Date.now(), memberName: "全體同學", amount: 0, reason: "全班歸零", timestamp: new Date().toLocaleString() }, ...(currentClass.history || [])].slice(0, 20)
+                });
+                setShowResetConfirm(false);
+            };
+
             const handleToggleAbsent = async (memberId) => {
                 if (!currentClass || !db) return;
                 const updatedMembers = currentClass.members.map(m => m.id === memberId ? { ...m, isAbsent: !m.isAbsent } : m);
@@ -288,6 +305,11 @@
                             </div>
                             {!isCapturing && (
                                 <div className="flex gap-2">
+                                    {currentClassId && (
+                                        <button onClick={() => setShowResetConfirm(true)} className="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-black flex items-center gap-2 border border-red-200 hover:bg-red-600 hover:text-white transition-all shadow-sm">
+                                            <Icon name="trash" size={16}/> 歸零
+                                        </button>
+                                    )}
                                     {activeTab === 'leaderboard' && currentClassId && <button onClick={handleCapture} className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-black flex items-center gap-2 shadow-md"><Icon name="camera" size={16}/> 截圖</button>}
                                     <button onClick={() => location.reload()} className="p-2 text-slate-400 hover:text-red-500"><Icon name="logout" size={20}/></button>
                                 </div>
@@ -330,7 +352,7 @@
                                                 </div>
                                             ))}
                                             {!isCapturing && (
-                                                <div onClick={() => setShowAddModal(true)} className="bg-dashed border-4 border-dashed border-slate-200 p-4 rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:border-sky-400 hover:bg-sky-50 transition-all min-h-[220px] group">
+                                                <div onClick={() => setShowAddModal(true)} className="bg-dashed p-4 rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:bg-sky-50 transition-all min-h-[220px] group">
                                                     <div className="text-5xl text-slate-300 group-hover:scale-125 transition-transform mb-2">👤+</div>
                                                     <div className="font-black text-slate-400 text-lg">新增學員</div>
                                                 </div>
@@ -356,7 +378,7 @@
                                             {(currentClass.history || []).map(log => (
                                                 <div key={log.id} className="bg-white p-6 rounded-2xl shadow-md border-l-[10px] border-[#0068B7] flex justify-between items-center transition-transform hover:translate-x-2">
                                                     <div>
-                                                        <div className="font-black text-lg">{isCapturing ? maskName(log.memberName) : log.memberName} <span className={log.amount >= 0 ? "text-green-500" : "text-red-500"}>{log.amount >= 0 ? `+${log.amount}` : log.amount}</span></div>
+                                                        <div className="font-black text-lg">{isCapturing ? maskName(log.memberName) : log.memberName} <span className={log.amount > 0 ? "text-green-500" : log.amount < 0 ? "text-red-500" : "text-sky-500"}>{log.amount > 0 ? `+${log.amount}` : log.amount === 0 ? "歸零" : log.amount}</span></div>
                                                         <div className="text-slate-400 font-bold text-sm tracking-wide">{log.reason}</div>
                                                     </div>
                                                     <div className="text-right text-xs font-black text-slate-300">{log.timestamp}</div>
@@ -368,6 +390,21 @@
                             )}
                         </div>
                     </main>
+
+                    {/* 確認重置視窗 */}
+                    {showResetConfirm && (
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[4000] flex items-center justify-center p-6 animate-in fade-in">
+                            <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl border-t-[10px] border-red-500 text-center">
+                                <div className="text-6xl mb-4">⚠️</div>
+                                <h2 className="text-2xl font-black text-slate-800 mb-2">確定分數歸零？</h2>
+                                <p className="text-slate-500 font-bold mb-8">此動作將把全班同學的分數重置為 0，且無法還原。</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button onClick={() => setShowResetConfirm(false)} className="py-4 rounded-2xl bg-slate-100 text-slate-500 font-black">取消</button>
+                                    <button onClick={handleResetPoints} className="py-4 rounded-2xl bg-red-600 text-white font-black shadow-lg shadow-red-200">確定歸零</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {showAddModal && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[3000] flex items-center justify-center p-6 animate-in fade-in">
